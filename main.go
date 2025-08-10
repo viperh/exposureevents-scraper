@@ -56,12 +56,12 @@ func (c *Client) cookie(name string) (string, bool) {
 
 func (c *Client) PostJSON(path, refererPath string, payload any) ([]byte, error) {
 	b, _ := json.Marshal(payload)
-	
+
 	token, ok := c.cookie("_EXPOSURE_TOKEN_")
 	if !ok || token == "" {
 		return nil, fmt.Errorf("missing _EXPOSURE_TOKEN_ after warmup")
 	}
-	
+
 	req, _ := http.NewRequest("POST", c.base+path, bytes.NewReader(b))
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 	req.Header.Set("Content-Type", "application/json")
@@ -70,14 +70,14 @@ func (c *Client) PostJSON(path, refererPath string, payload any) ([]byte, error)
 	req.Header.Set("X-Exposure-Token", token)
 	req.Header.Set("Origin", c.base)
 	req.Header.Set("Referer", c.base+refererPath)
-	
+
 	resp, err := c.client.Do(req)
-	
+
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	out, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode >= 400 {
 		return nil, fmt.Errorf("status %d: %s", resp.StatusCode, string(out))
@@ -86,16 +86,16 @@ func (c *Client) PostJSON(path, refererPath string, payload any) ([]byte, error)
 }
 
 func main() {
-	
+
 	apiPath := "/youth-basketball-events"
 	referer := "/youth-basketball-events"
-	
+
 	c := NewClient("https://basketball.exposureevents.com")
 	err := c.Warmup(apiPath)
 	if err != nil {
 		panic(err)
 	}
-	
+
 	reqBody := &SearchReq{
 		SearchToken:     "",
 		StartDateString: "8/10/2025", // MM/DD/YYYY
@@ -107,14 +107,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	var getResult GetResult
 	if err := json.Unmarshal(out, &getResult); err != nil {
 		panic(err)
 	}
-	
+
 	var finalResults []Event
-	
+
 	for i := 1; i <= getResult.Total; i++ {
 		reqBody := &SearchReq{
 			Gender:          "-1",
@@ -133,12 +133,12 @@ func main() {
 		if err := json.Unmarshal(resp, &results); err != nil {
 			panic(err)
 		}
-		
+
 		for _, event := range results.Results {
 			finalResults = append(finalResults, event)
 		}
 	}
-	
+
 	for _, event := range finalResults {
 		fmt.Printf("Event ID: %d, Name: %s\n", event.ID, event.Name)
 	}
